@@ -112,17 +112,12 @@ def dfs_vroom():
     print(f"End of loop {count}")
 dfs_vroom()
 
-def best_cost(costMethod,best_cost_value,random_number):
-    if best_cost_value == None:
-                best_cost_value = random_number  
-                print(f"First Best Cost: {best_cost_value}")      
-    if costMethod=="min":            
-        if random_number < best_cost_value:
-            best_cost_value = random_number
+def best_cost(costMethod,cost_array):       
+    if costMethod=="min":                    
+            best_cost_value = min(cost_array)  
             print(f"New Best Cost: {best_cost_value}")
     elif costMethod=="max":
-        if random_number > best_cost_value:
-            best_cost_value = random_number
+            best_cost_value = max(cost_array)  
             print(f"New Best Cost: {best_cost_value}")
     return best_cost_value
 
@@ -147,23 +142,23 @@ def bfs_vroom(costMethod):
     best_cost_value_6 = None
     best_cost_value_7 = None
     best_cost_value_8 = None
-
+    cost_array = [1,4,3,2,6]
     #Generate 8 routes for TW1 open start
     for i in range(1,9):
-        random_number = generate_random_number(1, 100000) 
+        
         #Read cost from each json outout and save 'best' as per costMethod
-        best_cost_value_1 = best_cost(costMethod,best_cost_value_1,random_number)
+        best_cost_value_1 = best_cost(costMethod,cost_array)
     #Generate 7 routes for TW2 open start
     for i in range(1,8):
-        random_number = generate_random_number(1, 100000) 
+        
         #Read cost from each json outout and save 'best' as per costMethod
-        best_cost_value_2 = best_cost(costMethod,best_cost_value_2,random_number)
+        best_cost_value_2 = best_cost(costMethod,cost_array)
 
     #Generate 6 routes for TW3 but V.start is now Badet.
     for i in range(1,7):
-        random_number = generate_random_number(1, 100000) 
+        
         #Read cost from each json outout and save 'best' as per costMethod
-        best_cost_value_3 = best_cost(costMethod,best_cost_value_3,random_number)
+        best_cost_value_3 = best_cost(costMethod,cost_array)
     #Generate return of TW1 (V.TW2.Arrive)
     reversed_num = int(str(best_cost_value_1)[::-1])
     print(f"Reversed of bcv_1: {reversed_num}")
@@ -171,9 +166,9 @@ def bfs_vroom(costMethod):
     #Generate 5 routes for TW4 but V.start is now end of return of TW1
     print(f"Last of bcv_1: {(best_cost_value_1 % 10)}")
     for i in range(1,6):
-        random_number = generate_random_number((best_cost_value_1 % 10) , 100000) 
+        
         #Read cost from each json outout and save 'best' as per costMethod
-        best_cost_value_4 = best_cost(costMethod,best_cost_value_4,random_number)
+        best_cost_value_4 = best_cost(costMethod,cost_array)
 
     #Generate return of TW2 (V.TW3.Arrive)
     #Generate 4 routes for TW5 but V.start is now end of return of TW2
