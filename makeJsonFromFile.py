@@ -2,32 +2,83 @@ import random
 import json
 import pandas as pd
 import subprocess
+import os
+from Data import data_locations 
+from datetime import datetime, timedelta
+
+
+
 
 def find_lat_lon(input):
-    coordTranslate ={
-         
-    }
+    coordTranslate = data_locations.get_coord_dict()
+    
     return coordTranslate[input]
+def lat_lon_to_name(value):
+    dictionary = data_locations.get_coord_dict()
 
+    for key,val in dictionary.items():
+        if val == value:
+            #print(f"KEY: {key} VAL: {val} VALUE: {val} ")
+            return key
+    print(f"VALUE NOT FOUND: {value}")
+    return None
+    
 def generate_random_number(x, y):
     return random.randint(x, y)
 
-def make_shipment(amount,id,pickup,p_desc,delivery,d_desc,tw):
+def make_shipment(amount,id,pickup,p_desc,delivery,d_desc,tw,return_route,tw2):
+    service = 60
     if tw != []:        
-        shipment ={
-            "amount":amount,
-            "pickup":{
-                "id": id,
-                "description": p_desc,
-                "location": pickup
-            },
-            "delivery":{
-                "id": id,
-                "description": d_desc,
-                "location": delivery,
-                "time_windows": tw
+        if return_route == 0 and tw2==[]:
+            shipment ={
+                "amount":amount,
+                "pickup":{
+                    "id": id,
+                    "description": p_desc,
+                    "location": pickup,
+                    "service": service
+                },
+                "delivery":{
+                    "id": id,
+                    "description": d_desc,
+                    "location": delivery,
+                    "time_windows": tw
+                }
             }
-        }
+        elif return_route == 0 and tw2!=[]:
+            shipment ={
+                "amount":amount,
+                "pickup":{
+                    "id": id,
+                    "description": p_desc,
+                    "location": pickup,
+                    "time_windows": tw2,
+                    "service": service
+                },
+                "delivery":{
+                    "id": id,
+                    "description": d_desc,
+                    "location": delivery,
+                    "time_windows": tw
+                }
+            }
+        elif return_route == 1 or return_route == 2:
+            shipment ={
+                "amount":amount,
+                "pickup":{
+                    "id": id,
+                    "description": p_desc,
+                    "location": pickup,
+                    "time_windows": tw
+                },
+                "delivery":{
+                    "id": id,
+                    "description": d_desc,
+                    "location": delivery,
+                    "service": service
+                }
+            }
+        
     else:
        shipment ={
             "amount":amount,
@@ -64,7 +115,7 @@ def make_vehicle(id,per_hour,per_km,start,end,capacity,tw):
         #print("START LOCATION OPEN")      
         vehicle ={
                 "id":id,
-                "cost":{
+                "costs":{
                     "per_hour": per_hour,
                     "per_km": per_km            
                 },                                
@@ -75,30 +126,28 @@ def make_vehicle(id,per_hour,per_km,start,end,capacity,tw):
         #print("START LOCATION HAS VALUE")  
         vehicle ={
             "id":id,
-            "cost":{
+            "costs":{
                 "per_hour": per_hour,
                 "per_km": per_km            
             },
-            "start":start,
-            "end": end,
+            "start":start,            
             "capacity": capacity,
         }
         if tw != []:
              vehicle ={
             "id":id,
-            "cost":{
+            "costs":{
                 "per_hour": per_hour,
                 "per_km": per_km            
             },
             "start":start,
-            "end": end,
             "capacity": capacity,
-            "time_windows": tw
+            "time_window": tw
         }
     return vehicle
 
 
-def make_json(vehicles,filename,timeH,timeM,retrun_start,return_route):
+def make_json(vehicles,filename,timeH,timeM,retrun_start,prev_end_time,return_route):
     data = {
         "vehicles":[],
         "shipments":[]
@@ -113,15 +162,21 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,return_route):
         if name != '':
             amount= amount_list[i]
             id = i
-
-            if return_route == 1:
+            tw2= []
+            if return_route == 1 or return_route == 2:
                 pickup = find_lat_lon("Framnäs Badet")
                 pickup.reverse()
                 p_desc = "Framnäs Badet"
                 delivery = find_lat_lon(name)
                 delivery.reverse()
                 d_desc = name
-                tw = []
+                if return_route == 1:
+                    tw=[[timeH*3600 + timeM*60 , timeH*3600 + (timeM+2)*60]]
+                elif return_route == 2:
+                    tw=[[timeH*3600 + timeM*60 + 3600*2, timeH*3600 + timeM*60 + 3600*3]]
+                else:
+                    tw = []                    
+            
             else:
                 pickup = find_lat_lon(name)
                 pickup.reverse()
@@ -129,27 +184,34 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,return_route):
                 delivery = find_lat_lon("Framnäs Badet")
                 delivery.reverse()
                 d_desc = "Framnäs Badet"
-                tw = [[timeH * 3600 + timeM * 60, timeH*3600 + (timeM + 10) * 60]]
-            shipment = make_shipment(amount,id,pickup,p_desc,delivery,d_desc,tw)
+                tw = [[timeH * 3600 + timeM * 60, timeH*3600 + (timeM + 2) * 60]]
+                if prev_end_time !=0:
+                    tw2 = [[prev_end_time, timeH * 3600 + (timeM-5) * 60]]
+            shipment = make_shipment(amount,id,pickup,p_desc,delivery,d_desc,tw,return_route,tw2)
             data['shipments'].append(shipment)
     
     num_of_vehicles = vehicles
     for i in range(1,num_of_vehicles+1):
         id = i
-        per_hour = 3600 
-        per_km = 0
+        per_hour = 0 
+        per_km = 1
         tw = []
-        if retrun_start != "" or None:
+        if retrun_start != "":
             #print(f"START LOCATION IS {retrun_start} ")
             start = find_lat_lon(retrun_start)
             start.reverse()
+            end = []
             if return_route == 1:
-                tw = [[timeH * 3600 + timeM * 60, (timeH + 1)*3600 + (timeM + 30)* 60]]
+                tw = [timeH * 3600 + timeM * 60, (timeH + 1)*3600 + (timeM + 30)* 60]
+            elif return_route == 2:
+                tw = [prev_end_time, prev_end_time + 3600*4]
+            elif return_route == 0 and prev_end_time != 0:
+                tw = [prev_end_time, timeH * 3600 + (timeM + 10) * 60]
            #print(start)  
         elif retrun_start == "" or None:
             start = []     
-        end = find_lat_lon("Framnäs Badet")
-        end.reverse()
+            end = find_lat_lon("Framnäs Badet")
+            end.reverse()
         capacity = [50,15,15,15,15,30]
         vehicle = make_vehicle(id,per_hour,per_km,start,end,capacity,tw)
         data['vehicles'].append(vehicle)
@@ -211,11 +273,14 @@ def read_file(filename):
 
 def read_cost_output(json_routes):
     cost_array = []
-    for item in json_routes['routes']:
-            cost = item['cost']
-            cost_array.append(cost)
-            #print(item['cost'])
-    print(cost_array)
+    if 'routes' in json_routes: 
+        for item in json_routes['routes']:
+                cost = item['cost']
+                cost_array.append(cost)
+                #print(item['cost'])
+        print(cost_array)
+    else:
+        print("Key 'routes' not found") 
     return cost_array
 
 def best_cost(costMethod,cost_array):
@@ -244,20 +309,16 @@ def read_json_file(filename):
     return json_file
 
 
-def remove_shipment_from_file(shipments_to_remove,tw,in_filename):
-    print(f"DEBUG: TIMEWINDOW {tw} to create next data file. SHHIPMENT TO REMOVE: {shipments_to_remove}")
+def remove_shipment_from_file(shipments_to_remove,in_filename):
+    print(f"DEBUG: TIMEWINDOW {in_filename} to create next data file. SHHIPMENT TO REMOVE: {shipments_to_remove}")
     try:
         with open(f"Data/{in_filename}.txt", 'r') as f:
-            print("AAA")
             df = pd.read_csv(f, sep=",", names=['BusStop','Skill','BusRoute'],encoding='utf-8')
-            #print(df)
-            print("BBB")
             df2 = pd.DataFrame(columns=df.columns)
-            df2.to_csv(f'Data/{in_filename}_return.txt', sep=',',header=0, index=False, encoding='utf-8')
-            print("CCC")
+            df2.to_csv(f'Data/return_{in_filename}.txt', sep=',',header=0, index=False, encoding='utf-8')
             for item in shipments_to_remove:
                 df2 = df[df['BusStop'] == item]
-                df2.to_csv(f'Data/{in_filename}_return.txt',mode='a', sep=',',header=0, index=False, encoding='utf-8')
+                df2.to_csv(f'Data/return_{in_filename}.txt',mode='a', sep=',',header=0, index=False, encoding='utf-8')
 
             for item in shipments_to_remove:
                 df = df[df['BusStop'] != item]
@@ -267,16 +328,18 @@ def remove_shipment_from_file(shipments_to_remove,tw,in_filename):
         print("Remove Shipment: File not found.")
     except Exception as e:
         print("*** Remove Shipment: An error occurred:", e)
+     
     
-    print(tw)
+    """   
     suffix = int(tw[2:])  # Extract the numerical part after "tw"
     if 1 <= suffix < 8:
          tw = "tw" + str(suffix + 1)
-         print("DDD")
-         print(tw)
+
     else:
         # Handle the case when suffix is out of range
         print("Suffix out of range.")
+
+    """
     suffix_str=""
     for char in reversed(in_filename):
         if char.isdigit():
@@ -288,9 +351,9 @@ def remove_shipment_from_file(shipments_to_remove,tw,in_filename):
     in_filename = in_filename[:-len(suffix_str)] + str(suffix)
 
     try:
-       print("EEE")
+     
        df.to_csv(f'Data/{in_filename}.txt', sep=',',header=0, index=False, encoding='utf-8')
-       print("FFF")
+    
     except FileNotFoundError:
         print("Remove Shipment2: File not found.")
     except Exception as e:
@@ -302,9 +365,12 @@ def save_routes_and_remove(in_filename,costMethod,tw):
     cost_array = read_cost_output(json_file)
     best_cost_value_1,index = best_cost(costMethod,cost_array)
     print(f"Best Cost Value: {best_cost_value_1} With Index: {index}")
-    routes = json_file['routes']
+    if 'routes' in json_file:
+        routes = json_file['routes']
     tw1_start_loc = ""
     tw1_duration = 0
+    end_loc = ""
+    timestamp = 0
     shipments_to_remove = []
     if best_cost_value_1 != -1 or index != -1:
             
@@ -314,26 +380,31 @@ def save_routes_and_remove(in_filename,costMethod,tw):
         steps = tw1.get('steps', [])
         
         for item in steps:
+            timestamp = item['arrival']
             if 'description' in item:
                 desc = item['description']
                 if shipments_to_remove == []:
                     tw1_start_loc = desc
                 if desc != "Framnäs Badet":
                     shipments_to_remove.append(desc)
-                #print(f"Description: {desc}")
-                else:
-                    print("Description not found for this step.")
+                    print(f"Description: {desc}")
+                    print(f"Arrival: {str(timedelta(seconds=timestamp))}")
+            else:
+                print("Description not found for this step.")
         tw1_duration = tw1['duration']
         print(shipments_to_remove)
         print(tw1_start_loc)
+        end_loc = shipments_to_remove[-1]
+        print(f"End Location: {end_loc}")
+        print(f"Last Arrival: {str(timedelta(seconds=timestamp))}")
         print(tw1_duration)
-        
-    remove_shipment_from_file(shipments_to_remove,tw,in_filename)
-    shipments_to_remove.clear()
-    return best_cost_value_1,tw1_start_loc,tw1_duration
+    if tw != 1: 
+        remove_shipment_from_file(shipments_to_remove,in_filename)
+        shipments_to_remove.clear()
+    return best_cost_value_1,tw1_start_loc,tw1_duration, end_loc,timestamp
 
 def run_vroom(inputfile):
-    print("Sending new request to VROOM...")
+    print(f"Sending new request to VROOM...{inputfile}")
     location = "Input/"+ inputfile + ".json"
     result = "Output/output_" + inputfile + ".json"
     subprocess.run(['sudo', '../vroom/bin/vroom', '-i', location, '-o', result, '|', '\'.\''], capture_output=True)
@@ -342,13 +413,17 @@ def run_vroom(inputfile):
 
 def bfs_vroom(costMethod):
     print("Hello World!")
+    start_time = datetime.now()
     #Chose cost method, Keeping Max cost or Keeping Min cost or Keep Max cost for TW1 and TW2
+    mix = 0
     if costMethod == "min":
         print("CostMethod min")        
     elif costMethod == "max":
         print("CostMethod max")
     elif costMethod == "mix":
         print("CostMethod mix")
+        mix = 1
+        #costMethod = "max"
     else:
         print("No costMethod found, exit")
         exit()
@@ -366,107 +441,247 @@ def bfs_vroom(costMethod):
     best_cost_value_7 = None
     best_cost_value_8 = None
     
-
+    if mix == 1:
+        costMethod = "max"
     #TODO ADD TIME WINDOW OF VEHICLES!
     #make_json(VEHICLES,DATASET,TIME_H,TIME_M,START_LOC,DELIVERY/RETURN) 0 = DELIVERY 1 = RETURN
     #Generate 8 routes for TW1 open start
-    tw1_filename = make_json(8,'data2023tw1',7,40,"",0) # input for vroom
+    tw1_start_time = 6*3600 + 45*60 # EARLIEST A SHIPMENT-PICKUP CAN BE PICKED UP
+    tw1_filename = make_json(8,'data2023tw1',7,45,"",tw1_start_time,0) # input for vroom
     #method to run vroom to get output.json
     run_vroom(tw1_filename)
-    best_cost_value_1,tw1_start_loc,tw1_duration = save_routes_and_remove(tw1_filename,costMethod,"tw1")
+    best_cost_value_1,tw1_start_loc,tw1_duration, tw1_end_loc, tw1_end_time = save_routes_and_remove(tw1_filename,costMethod,0)
     print(f"BEST COST OF ROUTE ONE: {best_cost_value_1} TW1 START: {tw1_start_loc} TW1 DURATION: {tw1_duration}")
      
-
+    
     #Generate 7 routes for TW2 open start
     # OR use second best route of TW1
-    
-    tw2_filename = make_json(7,'data2023tw2',8,40,"",0)
+    tw2_start_time = 7*3600 + 45*60
+    tw2_filename = make_json(7,'data2023tw2',8,45,"",tw2_start_time,0)
     #method to run vroom to get output.json
     run_vroom(tw2_filename)
-    best_cost_value_2,tw2_start_loc,tw2_duration = save_routes_and_remove(tw2_filename,costMethod,"tw2")
+    best_cost_value_2,tw2_start_loc,tw2_duration, tw2_end_loc, tw2_end_time = save_routes_and_remove(tw2_filename,costMethod,0)
     print(f"BEST COST OF ROUTE TWO: {best_cost_value_2} TW2 START: {tw2_start_loc} TW2 DURATION: {tw2_duration}")
+    
     
     #Generate 6 routes for TW3 but V.start is now Badet.
     #OR use start location to third best route of TW1.
-
-    tw3_filename = make_json(6,'data2023tw3',9,40,"Framnäs Badet",0)
+    tw3_start_time = 8*3600 + 45*60
+    tw3_filename = make_json(6,'data2023tw3',9,45,"Framnäs Badet",tw3_start_time,0)
     #method to run vroom to get output.json
     run_vroom(tw3_filename)
-    best_cost_value_3,tw3_start_loc,tw3_duration = save_routes_and_remove(tw3_filename,costMethod,"tw3")
+    best_cost_value_3,tw3_start_loc,tw3_duration, tw3_end_loc, tw3_end_time = save_routes_and_remove(tw3_filename,costMethod,0)
     print(f"BEST COST OF ROUTE THREE: {best_cost_value_3} TW3 START: {tw3_start_loc} TW3 DURATION: {tw3_duration}")
 
+   
+    
     #Generate return of TW1 (V.TW2.Arrive) (Revers route of TW1)    
-    tw1_r_filename = make_json(1,'data2023tw1_return',9,15,"Framnäs Badet",1)
+    tw1_r_filename = make_json(1,'return_data2023tw1',9,15,"Framnäs Badet",0,1)
+    run_vroom(tw1_r_filename)
+    best_cost_value_tw1_r,tw1_r_start_loc,tw1_r_duration, tw1_r_end_loc, tw1_r_end_time = save_routes_and_remove(tw1_r_filename,costMethod,1)
+    print(f"**** #### {best_cost_value_tw1_r,tw1_r_start_loc,tw1_r_duration} ")
+   
+   
+   
+    if mix == 1:
+        costMethod = "min"
+
+
 
     #Generate 5 routes for TW4 but V.start is now end of return of TW1
     #OR Use foruth best route from TW1 with start of end of TW1
-    tw4_filename = make_json(5,'data2023tw4',10,40,tw1_start_loc,0)
+    tw4_filename = make_json(5,'data2023tw4',10,45,tw1_r_end_loc,tw1_r_end_time,0)
     #method to run vroom to get output.json
     run_vroom(tw4_filename)
-    best_cost_value_4,tw4_start_loc,tw4_duration = save_routes_and_remove(tw4_filename,costMethod,"tw4")
+    best_cost_value_4,tw4_start_loc,tw4_duration, tw4_end_loc, tw4_end_time = save_routes_and_remove(tw4_filename,costMethod,0)
+    
     print(f"BEST COST OF ROUTE FOUR: {best_cost_value_4} TW4 START: {tw4_start_loc} TW4 DURATION: {tw4_duration}")
     ##Generate return of TW2 (V.TW3.Arrive)
-    tw2_r_filename = make_json(1,'data2023tw2_return',10,15,"Framnäs Badet",1)
-
+    tw2_r_filename = make_json(1,'return_data2023tw2',10,15,"Framnäs Badet",0,1)
+    run_vroom(tw2_r_filename)
+    best_cost_value_tw2_r,tw2_r_start_loc,tw2_r_duration, tw2_r_end_loc, tw2_r_end_time = save_routes_and_remove(tw2_r_filename,costMethod,1)
+    
     #Generate 4 routes for TW5 but V.start is now end of return of TW2
-    tw5_filename = make_json(4,'data2023tw5',11,40,tw2_start_loc,0)
+    tw5_filename = make_json(4,'data2023tw5',11,45,tw2_r_end_loc,tw2_r_end_time,0)
     run_vroom(tw5_filename)
-    best_cost_value_5,tw5_start_loc,tw5_duration = save_routes_and_remove(tw5_filename,costMethod,"tw5")
+    best_cost_value_5,tw5_start_loc,tw5_duration, tw5_end_loc, tw5_end_time = save_routes_and_remove(tw5_filename,costMethod,0)
     print(f"BEST COST OF ROUTE FIVE: {best_cost_value_5} TW5 START: {tw5_start_loc} TW4 DURATION: {tw5_duration}")
+    
     #OR Use fifth best route from TW1 with start of end of TW2
     #Generate return of TW3 (V.TW4.Arrive)
-    tw3_r_filename = make_json(1,'data2023tw3_return',11,15,"Framnäs Badet",1)
-    
+    tw3_r_filename = make_json(1,'return_data2023tw3',11,15,"Framnäs Badet",0,1)
+    run_vroom(tw3_r_filename)
+    best_cost_value_tw3_r,tw3_r_start_loc,tw3_r_duration, tw3_r_end_loc, tw3_r_end_time = save_routes_and_remove(tw3_r_filename,costMethod,1)
     
     #Generate 3 routes for TW6 V.start is now end of return of TW3
     #OR Use sixth best route from TW1 with start of end of TW3
-    tw6_filename = make_json(3,'data2023tw6',12,40,tw3_start_loc,0)
+    tw6_filename = make_json(3,'data2023tw6',12,45,tw3_r_end_loc,tw3_r_end_time,0)
     run_vroom(tw6_filename)
-    best_cost_value_6,tw6_start_loc,tw6_duration = save_routes_and_remove(tw6_filename,costMethod,"tw6")
+    best_cost_value_6,tw6_start_loc,tw6_duration, tw6_end_loc, tw6_end_time = save_routes_and_remove(tw6_filename,costMethod,0)
     print(f"BEST COST OF ROUTE SIX: {best_cost_value_6} TW6 START: {tw6_start_loc} TW4 DURATION: {tw6_duration}")
+    
     #Generate return of TW4 (V.TW5.Arrive)
-    tw4_r_filename = make_json(1,'data2023tw4_return',12,15,"Framnäs Badet",1)
+    tw4_r_filename = make_json(1,'return_data2023tw4',12,15,"Framnäs Badet",0,1)
+    run_vroom(tw4_r_filename)
+    best_cost_value_tw4_r,tw4_r_start_loc,tw4_r_duration, tw4_r_end_loc, tw4_r_end_time = save_routes_and_remove(tw4_r_filename,costMethod,1)
     
     #Generate 2 routes for TW7 V.start is now end of return of TW4
     #OR Use seventh best route from TW1 with start of end of TW4
-    tw7_filename = make_json(2,'data2023tw7',13,40,tw4_start_loc,0)
+    
+    tw7_filename = make_json(2,'data2023tw7',13,45,tw4_r_end_loc,tw4_r_end_time,0)
     run_vroom(tw7_filename)
-    best_cost_value_7,tw7_start_loc,tw7_duration = save_routes_and_remove(tw7_filename,costMethod,"tw7")
-    print(f"BEST COST OF ROUTE SEVEN: {best_cost_value_7} TW7 START: {tw7_start_loc} TW7 DURATION: {tw7_duration}")
+    best_cost_value_7,tw7_start_loc,tw7_duration, tw7_end_loc, tw7_end_time = save_routes_and_remove(tw7_filename,costMethod,0)
+    print(f"BEST COST OF ROUTE SEVEN: {best_cost_value_7} TW7 START: {tw7_start_loc} TW7 DURATION: {tw7_duration} TW4 RETURN END TIME: {tw4_r_end_time}")
     #Generate return of TW5 (V.TW6.Arrive)
-    tw5_r_filename = make_json(1,'data2023tw5_return',13,15,"Framnäs Badet",1)
+    
+    tw5_r_filename = make_json(1,'return_data2023tw5',13,15,"Framnäs Badet",0,1)
+    run_vroom(tw5_r_filename)
+    best_cost_value_tw5_r,tw5_r_start_loc,tw5_r_duration, tw5_r_end_loc, tw5_r_end_time = save_routes_and_remove(tw5_r_filename,costMethod,1)
 
     #Generate 1 routes for TW8 V.start is now end of return of TW5
     #OR Use eight best route from TW1 with start of end of TW5
+    
     print("TIME WINDOW 8 START")
-    tw8_filename = make_json(1,'data2023tw8',14,40,tw5_start_loc,0)
+    tw8_filename = make_json(1,'data2023tw8',14,45,tw5_r_end_loc,tw5_r_end_time,0)
     run_vroom(tw8_filename)
-    best_cost_value_8,tw8_start_loc,tw8_duration = save_routes_and_remove(tw8_filename,costMethod,"tw8")
+    best_cost_value_8,tw8_start_loc,tw8_duration, tw8_end_loc, tw8_end_time = save_routes_and_remove(tw8_filename,costMethod,0)
     print(f"BEST COST OF ROUTE EIGHT: {best_cost_value_8} TW8 START: {tw8_start_loc} TW8 DURATION: {tw8_duration}")
 
     #Generate return of TW6 (V.TW7.Arrival)
     print("RETURN TW6")
-    tw6_r_filename = make_json(1,'data2023tw6_return',14,15,"Framnäs Badet",1) 
+    tw6_r_filename = make_json(1,'return_data2023tw6',14,15,"Framnäs Badet",0,1) 
+    run_vroom(tw6_r_filename)
+    best_cost_value_tw6_r,tw6_r_start_loc,tw6_r_duration, tw6_r_end_loc, tw6_r_end_time = save_routes_and_remove(tw6_r_filename,costMethod,1)
     
     #Generate return of TW7 (V.TW8.Arrival)
     print("RETURN TW7")
-    tw7_r_filename = make_json(1,'data2023tw7_return',15,15,"Framnäs Badet",1)
+    tw7_r_filename = make_json(1,'return_data2023tw7',15,15,"Framnäs Badet",0,1)
+    run_vroom(tw7_r_filename)
+    best_cost_value_tw7_r,tw7_r_start_loc,tw7_r_duration, tw7_r_end_loc, tw7_r_end_time = save_routes_and_remove(tw7_r_filename,costMethod,1)
     
     #Generate return of TW8 but start is now end of return of TW6
     #make sure to calc route from end of tw6_return to Badet to reach 16.15
-    #make_json(1,'data2023tw8_return',16,15,"Framnäs Badet",1) 
+    tw8_r_filename = make_json(1,'return_data2023tw8',14,15,tw6_r_end_loc,tw6_r_end_time,2) 
+    run_vroom(tw8_r_filename)
+    best_cost_value_tw8_r,tw8_r_start_loc,tw8_r_duration, tw8_r_end_loc, tw8_r_end_time = save_routes_and_remove(tw8_r_filename,costMethod,1)
+
     #make_json(1,'data2023tw8_return',(14,15 + tw6_duration),tw6_start_loc,0)    
     
     #Merge all routes
         
     #Total of 16 input files and 16 output files + one input and output for mergedfile
+    end_time = datetime.now()
+    total = end_time - start_time
+    print(f"\n\n\n*!*!*!*!*!*! TOTAL TIME: {total}*!*!*!*!*!*!  \n\n\n\n")
+bfs_vroom("min")
 
-bfs_vroom("max")
-
-
+def calculate_total():
+    folder_path = "Routes/"
+    total_cost = 0
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".json"):
+            file_path = os.path.join(folder_path, filename)
+            # Open the JSON file and load the data
+            with open(file_path, 'r', encoding="utf-8") as f:
+               json_data = json.load(f)
+            # Access the 'cost' key and add it to the total cost
+            print(f"Filename: {filename} Cost: {json_data.get('cost', 0)}")
+            total_cost += json_data.get('cost', 0)
+    print(f"Total cost: {total_cost}")
 #Request route - (return if have delivered or pickup if have returned)
 #Run vroom on dataset with current position of vehicle that requested
 #Output chosen node based on cost_method
 #Remove from dataset and add to return dataset
 
+calculate_total()
+
+def read_route(file_path):
+    try:
+        path = ""
+        with open(file_path, 'r', encoding="utf-8") as f:
+            json_data = json.load(f)
+            prev_name = "0000"
+            path = "START: "
+            # Access the 'cost' key and add it to the total cost
+            for item in json_data.get('steps', 0):      
+                loc = item['location'] 
+                loc.reverse()            
+                arrival = item['arrival']
+                td = timedelta(seconds=arrival)
+                #print(f"Type: {item['type']} Location: {item['location']} Name: {lat_lon_to_name(loc)}")
+                if lat_lon_to_name(loc) == None:
+                    print(f"*** VALUE NOT FOUND FOR: {item['description']} ***")
+                else:                     
+                    name = str(lat_lon_to_name(loc))
+                   
+                    if prev_name != name:
+                        if path == "START: ":
+                            path += name + " @ " + str(td)
+                        else:
+                            path += " --> " + name + " @ " + str(td)   
+                        prev_name = name                
+            print(path)
+    except FileNotFoundError:
+        print(f"READ FILE: File not found. {file_path}")
+    except Exception as e:
+        print("READ FILE: An error occurred:", e)
     
+def dispaly_all_routes():
+    
+    
+    #745 tw1
+    #VEHICLE 1 PATH
+    print("VEHICLE 1 Path")
+    print("TIME WINDOW 1 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw1.json")
+    #845 tw2 (skulle kunna vara VEHICLE 2)
+    print("TIME WINDOW 2 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw2.json")
+    #945 tw3
+    print("TIME WINDOW 3 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw3.json")
+    #1015 r_tw2
+    print("TIME WINDOW 2 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw2.json")
+    #1145 tw5
+    print("TIME WINDOW 5 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw5.json")
+    #1215 r_tw4
+    print("TIME WINDOW 4 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw4.json")
+    #1345 tw7
+    print("TIME WINDOW 7 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw7.json")
+    #1415 r_tw6
+    print("TIME WINDOW 6 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw6.json")
+    #1615 r_tw8
+    print("TIME WINDOW 8 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw8.json")
+    print("")
+    
+    
+    #VEHICLE 2 PATH
+    #915 r_tw1
+    print("TIME WINDOW 1 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw1.json")
+    #1045 tw4
+    print("TIME WINDOW 4 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw4.json")
+    #1115 r_tw3 
+    print("TIME WINDOW 3 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw3.json")
+    #1245 tw6
+    print("TIME WINDOW 6 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw6.json")
+    #1315 r_tw5
+    print("TIME WINDOW 5 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw5.json")
+    #1445 tw8
+    print("TIME WINDOW 8 TRANSPORT TO LOCATION")
+    read_route("Routes/routes_data2023tw8.json")
+    #1515 r_tw7
+    print("TIME WINDOW 7 RETURN PATH")
+    read_route("Routes/routes_return_data2023tw7.json")
+    print("ALL ROUTES")
+dispaly_all_routes()

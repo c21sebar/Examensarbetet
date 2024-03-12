@@ -1,7 +1,7 @@
 import itertools
 import random
 import json
-
+import os
 global_best_cost = {'cost': 0, 'version': 0, "counter": 0}
 
 def generate_random_number(x, y):
@@ -282,3 +282,16 @@ def make_json():
     with open("test.json",'w', encoding="utf-8") as f:
         f.write(json.dumps(data, indent=2, ensure_ascii=False))
 make_json()
+
+folder_path = "Routes/"
+for filename in os.listdir(folder_path):
+    if filename.endswith(".json"):
+        file_path = os.path.join(folder_path, filename)
+        # Open the JSON file and load the data
+        with open(file_path, 'r', encoding="utf-8") as f:
+            json_data = json.load(f)
+            # Access the 'cost' key and add it to the total cost
+            for item in json_data.get('steps', 0):      
+                loc = item['location'] 
+                loc.reverse()            
+                print(f"Type: {item['type']} Location: {item['location']} Name: {lat_lon_to_name(loc)}")
