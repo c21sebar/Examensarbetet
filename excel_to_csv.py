@@ -17,6 +17,7 @@ def processData(year):
         print("File exists.")
         level_dict = {
             'Steg 1':1,
+            'STEG 1 Nybörjare':1,
             'Kan inte simma': 1,
             'kan inte simma': 1,
             'Steg 1- nybörjare, kan ej simma': 1,
@@ -24,18 +25,21 @@ def processData(year):
             'Steg 2':2,
             'Steg 2 - kan simma 5-25 m bröstsim':2,
             'Kan simma 5-25 m': 2,
+            'STEG 2 Barnet kan simma 5-25 meter bröstsim':2,
+            'Steg 2 - kan simma 5-25 m': 2,
             'Steg 3': 3,
             'Kan simma 25-50 m': 3,
-            'Steg 4': 4,
-            'Steg 4 ':4,
-            'Steg 2 - kan simma 5-25 m': 2,
             'Steg 3 - kan simma 25 - 50 m': 3,
             'Steg 3 - kan simma 25-50 m':3,
             'Steg 3 - kan simma 25 - 50 m bröstsim':3,
             'Steg 3 - kan simma 25-50 m bröstsim':3,
+            'STEG 3 Barnet kan simma 25-50 meter bröstsim':3,
+            'Steg 4': 4,
+            'Steg 4 ':4,
             'Steg 4 - mer än 50 bröstsim, mindre än 25 m ryggsim': 4,
             'Steg 4 - mer än 50 m bröstsim, mindre än 25 m ryggsim':4,
             'Steg 4 - kan simma mer än 50 m men ej ryggsim': 4,
+            'STEG 4 Barnet kan simma mer än 50 meter bröstsim, men behöver träna på att flyta, dyka och ryggsim': 4, 
             'Kan simma längre äm 50 m': 5,
             'Kan simma längre än 50 m ': 5,
             'Kan simma längre än 50 m': 5,
@@ -45,7 +49,8 @@ def processData(year):
             'Steg 5 - mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, märkestagning': 5,
             'Steg 5 - mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, kunna dyka från kanten': 5,
             'Steg 5 - mer än 50 m bröstsim, mindre än 25 m ryggsim': 5,
-            'Steg 5 - märkestagning, mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, kunna dyka från kanten': 5
+            'Steg 5 - märkestagning, mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, kunna dyka från kanten': 5,
+            'STEG 5 Märkestagning, Barnet kan simma mer än 50 meter bröstsim, 25 meter ryggsim, dyka från kanten och flyta i 1 minut.': 5
         }
         df = pd.read_excel(xls_file, header=0, usecols="A,B,C")
         df.dropna(how='any', inplace=True)
@@ -85,4 +90,4 @@ def processData(year):
             else:
                 print("SOMETHING WRONG WITH PERIOD")
     
-processData("2021")
+processData("2023")
