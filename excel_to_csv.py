@@ -22,6 +22,7 @@ def processData(year):
             'Steg 1- nybörjare, kan ej simma': 1,
             'Steg 1 - nybörjare, kan inte simma':1,
             'Steg 2':2,
+            'Steg 2 - kan simma 5-25 m bröstsim':2,
             'Kan simma 5-25 m': 2,
             'Steg 3': 3,
             'Kan simma 25-50 m': 3,
@@ -30,6 +31,8 @@ def processData(year):
             'Steg 2 - kan simma 5-25 m': 2,
             'Steg 3 - kan simma 25 - 50 m': 3,
             'Steg 3 - kan simma 25-50 m':3,
+            'Steg 3 - kan simma 25 - 50 m bröstsim':3,
+            'Steg 3 - kan simma 25-50 m bröstsim':3,
             'Steg 4 - mer än 50 bröstsim, mindre än 25 m ryggsim': 4,
             'Steg 4 - mer än 50 m bröstsim, mindre än 25 m ryggsim':4,
             'Steg 4 - kan simma mer än 50 m men ej ryggsim': 4,
@@ -38,9 +41,11 @@ def processData(year):
             'Kan simma längre än 50 m': 5,
             'Kan simma längre än 50m ': 5,
             'Kan simma längre än 50m': 5,
+            'Steg 5': 5,
             'Steg 5 - mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, märkestagning': 5,
-            'Steg 5 - mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, kunna dyka från kanten':5,
-            'Steg 5':5
+            'Steg 5 - mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, kunna dyka från kanten': 5,
+            'Steg 5 - mer än 50 m bröstsim, mindre än 25 m ryggsim': 5,
+            'Steg 5 - märkestagning, mer än 50 m bröstsim, 25 m ryggsim, flyta 1 min, kunna dyka från kanten': 5
         }
         df = pd.read_excel(xls_file, header=0, usecols="A,B,C")
         df.dropna(how='any', inplace=True)
@@ -80,4 +85,4 @@ def processData(year):
             else:
                 print("SOMETHING WRONG WITH PERIOD")
     
-processData("2017")
+processData("2021")
