@@ -56,10 +56,10 @@ def processData(year):
         df.dropna(how='any', inplace=True)
         print(df)
         df1 = pd.DataFrame(columns=df.columns)
-        filename1 =  f"Data/csv/data{year}_p1.txt"
+        filename1 =  f"Data/csv/data{year}_p1tw1.txt"
         df1.to_csv(filename1, sep=',',header=0, index=False, encoding='utf-8')
         df2 = pd.DataFrame(columns=df.columns)
-        filename2 =  f"Data/csv/data{year}_p2.txt"
+        filename2 =  f"Data/csv/data{year}_p2tw1.txt"
         df2.to_csv(filename2, sep=',',header=0, index=False, encoding='utf-8')
         for index in df.index:
             print(f"{df.loc[index, 'Period']}, {df.loc[index, 'Busshållsplats']}, {df.loc[index, 'Simmkunighetidag']}")
@@ -89,5 +89,6 @@ def processData(year):
                     df2.to_csv(filename2, mode='a', sep=',',header=0, index=False, encoding='utf-8')
             else:
                 print("SOMETHING WRONG WITH PERIOD")
-    
-processData("2023")
+
+for x in range (13,24):
+    processData(f"20{x}")
