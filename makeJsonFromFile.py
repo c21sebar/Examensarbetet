@@ -173,6 +173,11 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,prev_end_time,return_ro
                 delivery = find_lat_lon(name)
                 delivery.reverse()
                 d_desc = name
+                id = delivery[1]
+                id = str(id)
+                id = id.split(".",1)
+                id = id[1]
+                id = int(id) +i
                 if return_route == 1:
                     tw=[[timeH*3600 + timeM*60 , timeH*3600 + (timeM+2)*60]]
                 elif return_route == 2:
@@ -187,6 +192,11 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,prev_end_time,return_ro
                 delivery = find_lat_lon("Framnäs Badet")
                 delivery.reverse()
                 d_desc = "Framnäs Badet"
+                id = delivery[0]
+                id = str(id)
+                id = id.split(".",1)
+                id = id[1]
+                id = int(id) +i
                 tw = [[timeH * 3600 + timeM * 60, timeH*3600 + (timeM + 2) * 60]]
                 if prev_end_time !=0:
                     tw2 = [[prev_end_time, timeH * 3600 + (timeM-5) * 60]]
@@ -211,6 +221,8 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,prev_end_time,return_ro
         #print("Else")
     for i in range(1,num_of_vehicles+1):
         id = i
+        id = str(num_of_vehicles) + str(i) + str(timeH) + str(timeM) + str(return_route)
+        id = int(id)
         per_hour = 0 
         per_km = 1
         tw = []
@@ -429,11 +441,11 @@ def run_vroom(inputfile,engine,iteration,year):
     result = f"Data/{year}/{iteration}/{engine}/Output/output_" + inputfile + ".json"
     #, '|', '\'.\''
     if engine == "OSRM":
-        subprocess.run(['sudo', '../vroom/bin/vroom', '-i', location, '-o', result], capture_output=True)
+        subprocess.run(['sudo', '../vroom/bin/vroom', '-g', '-i', location, '-o', result], capture_output=True)
     elif engine == "ORS":
-        subprocess.run(['sudo', '../vroom/bin/vroom', '-i', location, '-o', result, '-r', 'ors', '-p', 'driving-car:8080', '-a', 'driving-car:0.0.0.0/ors/v2' ], capture_output=True)
+        subprocess.run(['sudo', '../vroom/bin/vroom', '-g', '-i', location, '-o', result, '-r', 'ors', '-p', 'driving-car:8080', '-a', 'driving-car:0.0.0.0/ors/v2' ], capture_output=True)
     elif engine == "VALHALLA":
-        subprocess.run(['sudo', '../vroom/bin/vroom', '-i', location, '-o', result, '-r', 'valhalla', '-p', 'auto:8002', '-a', 'auto:0.0.0.0'], capture_output=True)
+        subprocess.run(['sudo', '../vroom/bin/vroom', '-g','-i', location, '-o', result, '-r', 'valhalla', '-p', 'auto:8002', '-a', 'auto:0.0.0.0'], capture_output=True)
     #print("VROOM Done!")
 
 
