@@ -131,7 +131,27 @@ def make_geo(engine,iteration,year,period):
     }
     #print(f"Total cost: {total_cost}")
     
-    with open(f"test.json",'w', encoding="utf-8") as f:
+    with open(f"Data/{year}/{iteration}/{engine}/map_total_route_p{period}.json",'w', encoding="utf-8") as f:
         f.write(json.dumps(total, indent=2, ensure_ascii=False))
 
-make_geo("ORS","1","13","1")
+
+test_runs = 30
+periods = 2
+max_years = 23
+for x in range(13,max_years+1):
+    year = x
+    for a in range(1,periods+1):
+        filename = f"data20{year}_p{a}"
+        for iteration in range(1,test_runs+1):
+            
+            engine = "osrm"
+            engine = str(engine).upper()
+            make_geo(engine,iteration,year,a)
+
+            engine = "valhalla"
+            engine = str(engine).upper()
+            make_geo(engine,iteration,year,a)
+
+            engine = "ors"
+            engine = str(engine).upper()
+            make_geo(engine,iteration,year,a)
