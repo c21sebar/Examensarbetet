@@ -101,7 +101,7 @@ def make_shipment(amount,id,pickup,p_desc,delivery,d_desc,tw,return_route,tw2):
 
 
 def make_vehicle(id,per_hour,per_km,start,end,capacity,tw,profile):
-   #print(f"PRINTING MAKE VEHICLE {id,per_hour,per_km,start,end,capacity}")
+   
     if id == None:
         id = generate_random_number(1000,10000)
     if per_hour == None and per_km== None:
@@ -204,21 +204,15 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,prev_end_time,return_ro
             data['shipments'].append(shipment)
     
     num_of_vehicles = vehicles
-    #print("\n \n \n")
-    #print(engine)
-    #print("\n \n \n")
+    
     if engine == "ORS":
-        profile = "driving-car"
-        #print(profile)
+        profile = "driving-car"     
     elif engine == "VALHALLA":
-        profile = "auto"
-        #print(profile)
+        profile = "auto"      
     elif engine == "OSRM":
-        profile = "car"   
-        #print(profile)     
+        profile = "car"             
     else:
         profile = "car"
-        #print("Else")
     for i in range(1,num_of_vehicles+1):
         id = i
         id = str(num_of_vehicles) + str(i) + str(timeH) + str(timeM) + str(return_route)
@@ -245,10 +239,9 @@ def make_json(vehicles,filename,timeH,timeM,retrun_start,prev_end_time,return_ro
         capacity = [55,24,24,24,24,35]
         vehicle = make_vehicle(id,per_hour,per_km,start,end,capacity,tw,profile)
         data['vehicles'].append(vehicle)
+        #print(data)
 
-    #print(data)
-      #  Data/{iteration}/{engine}/Data/{filename}.txt
-    #"Data/{iteration}/{engine}/Input/{filename}"
+   
     with open(f"Data/{year}/{iteration}/{engine}/Input/{filename}.json",'w', encoding="utf-8") as f:
         f.write(json.dumps(data, indent=2, ensure_ascii=False))
     return filename
@@ -273,20 +266,16 @@ def read_file(filename,engine,iteration,year):
     for row, value in data.items():
         #print(f"*** ROW: {row} LEVEL: {row[1]} VALUE: {value} ***")
         if row[0] == prev_name or prev_name == "":
-            amount[int(row[1])] = value
-            #amount.insert(row[1],value)
+            amount[int(row[1])] = value 
             #print(amount)
         else:
             #print(sum(amount))
             total = sum(amount)
-            amount[0] = total
-            #amount.insert(0, total)
+            amount[0] = total  
             #print(amount)
             ready_amount.append(amount)
-
             amount= [0,0,0,0,0,0]
             amount[int(row[1])] = value
-            #amount.insert(row[1],value)
             all_names.append(prev_name)
             #print(amount)
         prev_name = row[0]
@@ -294,8 +283,7 @@ def read_file(filename,engine,iteration,year):
         #print(find_lat_lon(str(row[0])))
     #print(sum(amount))
     total = sum(amount)
-    amount[0] = total
-    #amount.insert(0, total)    
+    amount[0] = total    
     ready_amount.append(amount)
     all_names.append(prev_name)
     #print(ready_amount)
@@ -361,17 +349,6 @@ def remove_shipment_from_file(shipments_to_remove,in_filename,engine,iteration,y
     except Exception as e:
         print("*** Remove Shipment: An error occurred:", e)
      
-    
-    """   
-    suffix = int(tw[2:])  # Extract the numerical part after "tw"
-    if 1 <= suffix < 8:
-         tw = "tw" + str(suffix + 1)
-
-    else:
-        # Handle the case when suffix is out of range
-        print("Suffix out of range.")
-
-    """
     suffix_str=""
     for char in reversed(in_filename):
         if char.isdigit():
@@ -439,7 +416,7 @@ def run_vroom(inputfile,engine,iteration,year):
     #print(f"Sending new request to VROOM...{inputfile}")
     location = f"Data/{year}/{iteration}/{engine}/Input/"+ inputfile + ".json"
     result = f"Data/{year}/{iteration}/{engine}/Output/output_" + inputfile + ".json"
-    #, '|', '\'.\''
+   
     if engine == "OSRM":
         subprocess.run(['sudo', '../vroom/bin/vroom', '-g', '-i', location, '-o', result], capture_output=True)
     elif engine == "ORS":
@@ -450,7 +427,7 @@ def run_vroom(inputfile,engine,iteration,year):
 
 
 def bfs_vroom(costMethod,engine,filename,iteration,year):
-    #print("Hello World!")
+    
     start_time = datetime.now()
     str(costMethod).lower()
     #Chose cost method, Keeping Max cost or Keeping Min cost or Keep Max cost for TW1 and TW2
@@ -462,7 +439,6 @@ def bfs_vroom(costMethod,engine,filename,iteration,year):
     elif costMethod == "mix":
         print("CostMethod mix")
         mix = 1
-        #costMethod = "max"
     else:
         print("No costMethod found, exit")
         exit()
@@ -749,10 +725,8 @@ def result_to_csv(max_year,periods,test_runs):
                 for iteration in range(1,test_runs+1):
                     with open(f"Data/{year}/{iteration}/{engine}/Final_route_{filename}.txt", 'r',encoding="utf-8") as f:
                         df = pd.read_csv(f, sep=",", names=['TOTAL_COST,TIME_TAKEN,ALL_DELIVERED'],encoding='utf-8',nrows=1,header=0)
-                        df['FILENAME'] = f"20{year}/{iteration}/{engine}/{filename}"
-                        #print("DF START")
+                        df['FILENAME'] = f"20{year}/{iteration}/{engine}/{filename}"            
                         #print(df)
-                        #print("DF END")
                         df.to_csv(f'total_results.txt',mode='a', sep=',',header=0, encoding='utf-8')
 
 test_runs = 30
