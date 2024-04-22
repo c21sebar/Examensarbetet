@@ -129,8 +129,8 @@ def get_coord_dict():
     return coordTranslate
 ```
 The file [results.ipynb](results.ipynb) is creating all the graphs, statistical tests and tables used in the thesis report.  
-  
-The file [geometryData.py](geometryData.py) takes the result output JSON file and combinesit with the associated input JSON files, this so it can be used to upload to the VROOM frontend without having to re-calculate the VROOM response on the fronted. This is to be able to visualize the routes on the map as one run of the experiment consists of 17 generated routes needed to be combined to solve the VRP.
+
+The file [geometryData.py](geometryData.py) takes the result output JSON file and combinesit with the associated input JSON files, this so it can be used to upload to the VROOM frontend without having to re-calculate the VROOM response on the fronted. This is to be able to visualize the routes on the map as one run of the experiment consists of 16 generated routes needed to be combined to solve the VRP.
 
 ## Filestructure in the VM
 The filestructure in the VM to run the experiment with the [makeJsonFromFile.py](makeJsonFromFile.py) follows the pattern of:  
